@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "generated_at": "2026-06-26T00:34:48",
+  "generated_at": "2026-06-26T00:34:57",
   "tracks": [
+    {
+      "id": "5a26e4ca0cf9",
+      "title": "LETSMINECRAFT",
+      "category": "monthly-archive",
+      "category_folder": "MonthlyArchive",
+      "month": "2026-06",
+      "date": "2026-06-26",
+      "source_filename": "LETSMINECRAFT.mp3",
+      "processed_filename": "LETSMINECRAFT.mp3",
+      "source_relative_path": "MonthlyArchive/2026-06/LETSMINECRAFT.mp3",
+      "processed_relative_path": "MonthlyArchive/2026-06/LETSMINECRAFT.mp3",
+      "r2_object_key": "monthly-archive/2026-06/2026-06-26--letsminecraft--5a26e4ca.mp3",
+      "audio_url": "https://pub-e80f82c8b4e041eab413331a162c738b.r2.dev/monthly-archive/2026-06/2026-06-26--letsminecraft--5a26e4ca.mp3",
+      "uploaded_at": "2026-06-26T00:34:57",
+      "conversion_status": "copied"
+    },
     {
       "id": "e62a56c0ae53",
       "title": "journal",
