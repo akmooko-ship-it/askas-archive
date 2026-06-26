@@ -1,106 +1,138 @@
+```html
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>June Sound Archive</title>
-</head>
+    <head>
+        <title>June Sound Archive</title>
+        <meta charset="UTF-8">
+    </head>
 
-<body>
-    <h1>June Sound Archive</h1>
+    <body>
+        <h1>June Sound Archive</h1>
 
-    <p>
-        <a href="Monthly Archive.html">|Head back to List of Months|</a>
-    </p>
+        <p>
+            <a href="Monthly Archive.html">|Head back to List of Months|</a>
+        </p>
 
-    <p>
-        <a href="index.html">|Head back to Homepage|</a>
-    </p>
+        <p>
+            <a href="index.html">|Head back to Homepage|</a>
+        </p>
 
-    <section id="entries">
-        <p>Loading June sounds...</p>
-    </section>
+        <section id="tracks-list">
+            <p>Loading June sounds...</p>
+        </section>
 
-    <script>
-        const DATA_URL = "tracks.json";
-        const CATEGORY = "monthly-archive";
-        const MONTH = "2026-06";
+        <script>
+            const TRACKS_JSON_URL = "data/tracks.json";
+            const PAGE_CATEGORY = "monthly-archive";
+            const PAGE_MONTH = "2026-06";
 
-        function formatDate(dateString) {
-            if (!dateString) return "Undated";
-
-            const parts = dateString.split("-");
-            if (parts.length !== 3) return dateString;
-
-            return `${parts[0]}.${parts[1]}.${parts[2]}`;
-        }
-
-        function renderTrack(track) {
-            const article = document.createElement("article");
-            article.className = "entry";
-
-            const title = document.createElement("h2");
-            title.textContent = `${formatDate(track.date)} - ${track.title || "Untitled"}`;
-
-            const meta = document.createElement("p");
-            meta.className = "meta";
-            meta.textContent = track.processed_filename || track.source_filename || "";
-
-            const audio = document.createElement("audio");
-            audio.controls = true;
-            audio.preload = "metadata";
-
-            const source = document.createElement("source");
-            source.src = track.audio_url;
-            source.type = "audio/mpeg";
-
-            audio.appendChild(source);
-
-            const notes = document.createElement("p");
-            notes.className = "notes";
-            notes.textContent = track.processed_relative_path || "";
-
-            article.appendChild(title);
-            article.appendChild(meta);
-            article.appendChild(audio);
-            article.appendChild(notes);
-
-            return article;
-        }
-
-        async function loadTracks() {
-            const entries = document.getElementById("entries");
-
-            try {
-                const response = await fetch(DATA_URL);
-
-                if (!response.ok) {
-                    throw new Error("Could not load track data.");
+            function formatDate(dateString) {
+                if (!dateString) {
+                    return "Undated";
                 }
 
-                const data = await response.json();
+                const parts = dateString.split("-");
 
-                const tracks = data.tracks
-                    .filter(track => track.category === CATEGORY && track.month === MONTH)
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                if (parts.length !== 3) {
+                    return dateString;
+                }
 
-                entries.innerHTML = "";
+                return `${parts[0]}.${parts[1]}.${parts[2]}`;
+            }
 
-                if (tracks.length === 0) {
-                    entries.innerHTML = "<p>No June sounds uploaded yet.</p>";
+            function createTrackEntry(track) {
+                const article = document.createElement("article");
+                article.className = "entry";
+
+                const title = document.createElement("h2");
+                title.textContent = `${formatDate(track.date)} - ${track.title || "Untitled"}`;
+
+                const meta = document.createElement("p");
+                meta.className = "meta";
+                meta.textContent = `Uploaded ${formatDate(track.date)} · ${track.source_filename || "Unknown source file"}`;
+
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.preload = "metadata";
+
+                const source = document.createElement("source");
+                source.src = track.audio_url;
+                source.type = "audio/mpeg";
+
+                audio.appendChild(source);
+
+                const fallback = document.createTextNode("Your browser does not support the audio element.");
+                audio.appendChild(fallback);
+
+                const notes = document.createElement("p");
+                notes.className = "notes";
+                notes.textContent = track.r2_object_key || "";
+
+                article.appendChild(title);
+                article.appendChild(meta);
+                article.appendChild(audio);
+
+                if (notes.textContent) {
+                    article.appendChild(notes);
+                }
+
+                return article;
+            }
+
+            function renderTracks(tracks) {
+                const container = document.getElementById("tracks-list");
+                container.innerHTML = "";
+
+                if (!tracks.length) {
+                    const emptyMessage = document.createElement("p");
+                    emptyMessage.textContent = "No June sounds uploaded yet.";
+                    container.appendChild(emptyMessage);
                     return;
                 }
 
                 tracks.forEach(track => {
-                    entries.appendChild(renderTrack(track));
+                    container.appendChild(createTrackEntry(track));
                 });
-
-            } catch (error) {
-                entries.innerHTML = "<p>Could not load June sounds.</p>";
-                console.error(error);
             }
-        }
 
-        loadTracks();
-    </script>
-</body>
+            async function loadTracks() {
+                const container = document.getElementById("tracks-list");
+
+                try {
+                    const response = await fetch(TRACKS_JSON_URL, {
+                        cache: "no-store"
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Could not load ${TRACKS_JSON_URL}`);
+                    }
+
+                    const data = await response.json();
+                    const tracks = Array.isArray(data.tracks) ? data.tracks : [];
+
+                    const juneSounds = tracks
+                        .filter(track => track.category === PAGE_CATEGORY && track.month === PAGE_MONTH)
+                        .sort((a, b) => {
+                            const bTime = new Date(b.uploaded_at || b.date || 0).getTime();
+                            const aTime = new Date(a.uploaded_at || a.date || 0).getTime();
+                            return bTime - aTime;
+                        });
+
+                    renderTracks(juneSounds);
+
+                } catch (error) {
+                    console.error(error);
+
+                    container.innerHTML = "";
+
+                    const errorMessage = document.createElement("p");
+                    errorMessage.textContent = "Could not load June sounds right now.";
+                    container.appendChild(errorMessage);
+                }
+            }
+
+            loadTracks();
+        </script>
+    </body>
 </html>
+```
