@@ -1,32 +1,133 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <Title>Finished Tracks</Title>
+        <title>Finished Tracks</title>
+        <meta charset="UTF-8">
     </head>
 
     <body>
         <h1>Finished Tracks</h1>
+
         <p>Finished Tracks. Produced, mixed, recorded, written, all that stuff by me. I can't promise all of them will be available to streaming services right away, but they'll be there in due time.</p>
+
         <p>All tracks here are my personal intellectual property. Please contact me if you would like to use them.</p>
-       
+
         <a href="index.html">|Head back to Homepage|</a>
-        <article class="entry">
-            <h2>2026.06.15 - IDC</h2>
-            <p class="meta">    Test upload for website</p>
 
-            <audio controls preload="metadata">
-            <source src="https://pub-e80f82c8b4e041eab413331a162c738b.r2.dev/FinishedTracks/fengissoahh.mp3" type="audio/mpeg">
-            </audio>
+        <section id="tracks-list">
+            <p>Loading finished tracks...</p>
+        </section>
 
-            <p class="notes">   First test for calling audio from R2 Bucket</p>
-        </article>
-    
+        <script>
+            const TRACKS_JSON_URL = "data/tracks.json";
+            const PAGE_CATEGORY = "finished";
 
-    
-    
-    
-    
-    
-    
+            function formatDate(dateString) {
+                if (!dateString) {
+                    return "Undated";
+                }
+
+                const parts = dateString.split("-");
+
+                if (parts.length !== 3) {
+                    return dateString;
+                }
+
+                return `${parts[0]}.${parts[1]}.${parts[2]}`;
+            }
+
+            function createTrackEntry(track) {
+                const article = document.createElement("article");
+                article.className = "entry";
+
+                const title = document.createElement("h2");
+                title.textContent = `${formatDate(track.date)} - ${track.title || "Untitled"}`;
+
+                const meta = document.createElement("p");
+                meta.className = "meta";
+                meta.textContent = `Uploaded ${formatDate(track.date)} · ${track.source_filename || "Unknown source file"}`;
+
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.preload = "metadata";
+
+                const source = document.createElement("source");
+                source.src = track.audio_url;
+                source.type = "audio/mpeg";
+
+                audio.appendChild(source);
+
+                const fallback = document.createTextNode("Your browser does not support the audio element.");
+                audio.appendChild(fallback);
+
+                const notes = document.createElement("p");
+                notes.className = "notes";
+                notes.textContent = track.r2_object_key || "";
+
+                article.appendChild(title);
+                article.appendChild(meta);
+                article.appendChild(audio);
+
+                if (notes.textContent) {
+                    article.appendChild(notes);
+                }
+
+                return article;
+            }
+
+            function renderTracks(tracks) {
+                const container = document.getElementById("tracks-list");
+                container.innerHTML = "";
+
+                if (!tracks.length) {
+                    const emptyMessage = document.createElement("p");
+                    emptyMessage.textContent = "No finished tracks uploaded yet.";
+                    container.appendChild(emptyMessage);
+                    return;
+                }
+
+                tracks.forEach(track => {
+                    container.appendChild(createTrackEntry(track));
+                });
+            }
+
+            async function loadTracks() {
+                const container = document.getElementById("tracks-list");
+
+                try {
+                    const response = await fetch(TRACKS_JSON_URL, {
+                        cache: "no-store"
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Could not load ${TRACKS_JSON_URL}`);
+                    }
+
+                    const data = await response.json();
+                    const tracks = Array.isArray(data.tracks) ? data.tracks : [];
+
+                    const finishedTracks = tracks
+                        .filter(track => track.category === PAGE_CATEGORY)
+                        .sort((a, b) => {
+                            const bTime = new Date(b.uploaded_at || b.date || 0).getTime();
+                            const aTime = new Date(a.uploaded_at || a.date || 0).getTime();
+                            return bTime - aTime;
+                        });
+
+                    renderTracks(finishedTracks);
+
+                } catch (error) {
+                    console.error(error);
+
+                    container.innerHTML = "";
+
+                    const errorMessage = document.createElement("p");
+                    errorMessage.textContent = "Could not load finished tracks right now.";
+                    container.appendChild(errorMessage);
+                }
+            }
+
+            loadTracks();
+        </script>
     </body>
 </html>
